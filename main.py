@@ -1,15 +1,18 @@
+
 import base64
 import json
 from email.header import decode_header, make_header
 from email.utils import parseaddr
 from pathlib import Path
 from threading import Lock
-from winotify import Notification
+
 from fastapi import FastAPI, HTTPException
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+
+from whatsapp_notify import send_whatsapp_message
 
 
 app = FastAPI()
@@ -28,6 +31,7 @@ STATE_FILE = Path("gmail_state.json")
 
 # Prevent two notifications from processing the same cursor together
 processing_lock = Lock()
+
 
 def load_gmail_service():
     if not TOKEN_FILE.exists():
@@ -120,12 +124,6 @@ def process_gmail_notification(notification):
 
         last_history_id = str(state["history_id"])
         notification_history_id = str(notification_history_id)
-
-        # Ignore duplicate or older notifications
-        if int(notification_history_id) <= int(last_history_id):
-            print("Duplicate notification ignored.")
-            return {"status": "duplicate"}
-
         gmail = load_gmail_service()
 
         # Retrieve changes since the last saved history ID
@@ -208,14 +206,21 @@ def process_gmail_notification(notification):
                 print("Subject:", subject)
                 print("=" * 45 + "\n")
 
-                toast = Notification(
-                    app_id="Gmail Mail Alert Agent",
-                    title="Important New Email!",
-                    msg=f"From: {email_data['sender_name']}\nSubject: {subject}",
-                    duration="long"
+                # Prepare WhatsApp notification
+                whatsapp_message = (
+                    "Important New Email!\n\n"
+                    f"From: {email_data['sender_name']}\n"
+                    f"Email: {sender}\n"
+                    f"Subject: {subject}"
                 )
 
-                toast.show()
+                # Send WhatsApp notification
+                sent = send_whatsapp_message(whatsapp_message)
+
+                if sent:
+                    print("WhatsApp alert delivered to API successfully.")
+                else:
+                    print("Failed to send WhatsApp alert.")
 
             else:
                 print("Ignored email from:", sender)
