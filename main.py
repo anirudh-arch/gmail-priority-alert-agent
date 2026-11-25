@@ -1,4 +1,3 @@
-
 import base64
 import json
 from email.header import decode_header, make_header
