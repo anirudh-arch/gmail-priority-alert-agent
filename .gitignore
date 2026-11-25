@@ -1,5 +1,26 @@
-Credentials.json
-token.json
+# Sensitive credentials
 .env
+.env.*
+!.env.example
+Credentials.json
+credentials.json
+client_secret*.json
+token.json
 gmail_state.json
+
+# Python cache files
 __pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+venv/
+
+# ngrok configuration
+ngrok.yml
+
+# Log files
+*.log
+
+# Local VS Code settings
+.vscode/
